@@ -93,8 +93,10 @@ private:
     for (int index = 0; index < glfwExtensionCount; index++) {
       bool isSupported = false;
       for (int ext = 0; ext < extensionCount; ext++) {
-	if (strcmp(glfwExtensions[index], extensions[ext].extensionName) == 0)
+	if (strcmp(glfwExtensions[index], extensions[ext].extensionName) == 0) {
 	  isSupported = true;
+	  break;
+	}
       }
       if (!isSupported) {
 	extensionsNotSupported.push_back(glfwExtensions[index]);
