@@ -4,7 +4,9 @@
 #include <iostream>
 #include <stdexcept>
 #include <functional>
+#include <vector>
 #include <cstdlib>
+#include <cstring>
 
 constexpr int WIDTH = 800;
 constexpr int HEIGHT = 600;
@@ -44,6 +46,25 @@ private:
     const char **glfwExtensions;
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
+    std::vector<const char*> extensionsNotSupported;
+    for (int index = 0; index < glfwExtensionCount; index++) {
+      bool isSupported = false;
+      for (int ext = 0; ext < extensionCount; ext++) {
+	if (strcmp(glfwExtensions[index], extensions[ext].extensionName) == 0)
+	  isSupported = true;
+      }
+      if (!isSupported) {
+	extensionsNotSupported.push_back(glfwExtensions[index]);
+      }
+    }
+
+    if (extensionsNotSupported.size() != 0) {
+      std::cout << "Extensions not supported:" << std::endl;
+      for (const auto& ext : extensionsNotSupported) {
+	std::cout << "\t" << ext << std::endl;
+      }
+    }
+
     createInfo.enabledExtensionCount = glfwExtensionCount;
     createInfo.ppEnabledExtensionNames = glfwExtensions;
     createInfo.enabledLayerCount = 0;
@@ -65,6 +86,7 @@ private:
   }
   
   void cleanup() {
+    vkDestroyInstance(instance, nullptr);
     glfwDestroyWindow(window);
     glfwTerminate();
   }
