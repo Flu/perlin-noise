@@ -31,6 +31,31 @@ private:
   GLFWwindow *window;
   VkInstance instance;
 
+  static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT messageType,
+    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+    void* pUserData) {
+    
+    std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+    
+    return VK_FALSE;
+  }
+
+  std::vector<const char*> getRequiredExtensions() {
+    uint32_t glfwExtensionCount = 0;
+    const char **glfwExtensions;
+    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    
+    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+    
+    if (enableValidationLayers) {
+      extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    }
+    
+    return extensions;
+  }
+
   bool checkValidationLayerSupport() {
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -74,44 +99,14 @@ private:
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &appInfo;
 
-    uint32_t glfwExtensionCount = 0;
-    uint32_t extensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
-
-    std::vector<VkExtensionProperties> extensions(extensionCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-
-    std::cout << "Available extensions:" << std::endl;
-    for (const auto& extension : extensions) {
-      std::cout << "\t" << extension.extensionName << std::endl;
+    if (enableValidationLayers) {
+      createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+      createInfo.ppEnabledLayerNames = validationLayers.data();
     }
     
-    const char **glfwExtensions;
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-    std::vector<const char*> extensionsNotSupported;
-    for (int index = 0; index < glfwExtensionCount; index++) {
-      bool isSupported = false;
-      for (int ext = 0; ext < extensionCount; ext++) {
-	if (strcmp(glfwExtensions[index], extensions[ext].extensionName) == 0) {
-	  isSupported = true;
-	  break;
-	}
-      }
-      if (!isSupported) {
-	extensionsNotSupported.push_back(glfwExtensions[index]);
-      }
-    }
-
-    if (extensionsNotSupported.size() != 0) {
-      std::cout << "Extensions not supported:" << std::endl;
-      for (const auto& ext : extensionsNotSupported) {
-	std::cout << "\t" << ext << std::endl;
-      }
-    }
-
-    createInfo.enabledExtensionCount = glfwExtensionCount;
-    createInfo.ppEnabledExtensionNames = glfwExtensions;
+    auto extensions = getRequiredExtensions();
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+    createInfo.ppEnabledExtensionNames = extensions.data();
     createInfo.enabledLayerCount = 0;
 
     VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
